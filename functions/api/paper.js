@@ -5,10 +5,16 @@ const BASE = "https://open.feishu.cn";
 let _token = null;
 let _expireAt = 0;
 
-function getEnv(context) {
+async function getEnv(context) {
   const base = typeof process !== "undefined" && process.env ? Object.assign({}, process.env) : {};
   const e = (context && context.env) || {};
-  return Object.assign(base, e);
+  let fileEnv = {};
+  try {
+    const mod = await import("./_env.js");
+    fileEnv = (mod && mod.ENV) || {};
+  } catch (_) {}
+  // 优先级：控制台环境变量(context.env) > 本地兜底文件 > process.env
+  return Object.assign({}, base, fileEnv, e);
 }
 
 async function getToken(env) {
@@ -45,7 +51,8 @@ async function listTable(env, table) {
     if (pageToken) path += "&page_token=" + encodeURIComponent(pageToken);
     const data = await feishuRequest(env, "GET", path);
     if (data.code !== 0) throw new Error("读取多维表格失败: " + data.msg);
-    for (const it of data.data.items) out.push({ id: it.record_id, ...it.fields });
+    const items = (data.data && data.data.items) || [];
+    for (const it of items) out.push({ id: it.record_id, ...it.fields });
     if (!data.data.has_more) break;
     pageToken = data.data.page_token || "";
     if (!pageToken) break;
@@ -77,7 +84,7 @@ function json(data, status = 200) {
 
 export async function onRequestPost(context) {
   try {
-    const env = getEnv(context);
+    const env = await getEnv(context);
     const all = await listTable(env, env.FEISHU_Q_TABLE);
     const single = all.filter((q) => q.q_type === "single");
     const tf = all.filter((q) => q.q_type === "tf");

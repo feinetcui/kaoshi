@@ -5,10 +5,16 @@ const BASE = "https://open.feishu.cn";
 let _token = null;
 let _expireAt = 0;
 
-function getEnv(context) {
+async function getEnv(context) {
   const base = typeof process !== "undefined" && process.env ? Object.assign({}, process.env) : {};
   const e = (context && context.env) || {};
-  return Object.assign(base, e);
+  let fileEnv = {};
+  try {
+    const mod = await import("./_env.js");
+    fileEnv = (mod && mod.ENV) || {};
+  } catch (_) {}
+  // 优先级：控制台环境变量(context.env) > 本地兜底文件 > process.env
+  return Object.assign({}, base, fileEnv, e);
 }
 
 async function getToken(env) {
@@ -45,7 +51,8 @@ async function listTable(env, table) {
     if (pageToken) path += "&page_token=" + encodeURIComponent(pageToken);
     const data = await feishuRequest(env, "GET", path);
     if (data.code !== 0) throw new Error("读取多维表格失败: " + data.msg);
-    for (const it of data.data.items) out.push({ id: it.record_id, ...it.fields });
+    const items = (data.data && data.data.items) || [];
+    for (const it of items) out.push({ id: it.record_id, ...it.fields });
     if (!data.data.has_more) break;
     pageToken = data.data.page_token || "";
     if (!pageToken) break;
@@ -78,15 +85,6 @@ function gradeOne(q, userAnswer) {
   return { correct: ratio >= 0.6, got, full: score };
 }
 
-function pad(n) {
-  return String(n).padStart(2, "0");
-}
-function formatDateTime(d) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(
-    d.getMinutes()
-  )}:${pad(d.getSeconds())}`;
-}
-
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -96,11 +94,11 @@ function json(data, status = 200) {
 
 export async function onRequestPost(context) {
   try {
-    const env = getEnv(context);
+    const env = await getEnv(context);
     const body = await context.request.json();
     const { name, paper_id, answers } = body || {};
     if (!name || !paper_id || !answers) return json({ error: "缺少必填字段" }, 400);
-    const ids = JSON.parse(paper_id);
+    const ids = typeof paper_id === "string" ? JSON.parse(paper_id) : paper_id;
     const all = await listTable(env, env.FEISHU_Q_TABLE);
     const map = new Map(all.map((q) => [q.id, q]));
     let singleScore = 0,
@@ -139,7 +137,7 @@ export async function onRequestPost(context) {
           short_score: shortScore,
           total_score: total,
           wrong_detail: JSON.stringify(wrong),
-          created_at: formatDateTime(new Date()),
+          created_at: Math.floor(Date.now() / 1000),
         },
       }
     );

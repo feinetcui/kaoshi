@@ -6,3 +6,4 @@ node_modules
 .workbuddy
 test_grade.mjs
 *.log
+functions/api/_env.js
