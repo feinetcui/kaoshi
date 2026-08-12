@@ -31,7 +31,7 @@ export default function Result() {
         <h2>考试结果</h2>
         <div className="score-big">{result.total} 分</div>
         <div className="breakdown">
-          单选 {result.single_score} ｜ 判断 {result.tf_score} ｜ 简答 {result.short_score}
+          填空 {result.fill_score} ｜ 判断 {result.tf_score} ｜ 简答 {result.short_score}
         </div>
 
         <h3>答错题目（{result.wrong.length}）</h3>

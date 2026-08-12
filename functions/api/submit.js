@@ -12,8 +12,13 @@ function normalize(s) {
 
 function gradeOne(q, userAnswer) {
   const score = Number(q.score) || 0;
-  if (q.q_type === "single" || q.q_type === "tf") {
-    const isCorrect = normalize(q.answer) === normalize(userAnswer);
+  if (q.q_type === "fill" || q.q_type === "tf") {
+    const given = normalize(userAnswer);
+    const candidates = String(q.answer == null ? "" : q.answer)
+      .split("|")
+      .map(normalize)
+      .filter(Boolean);
+    const isCorrect = candidates.length > 0 && candidates.includes(given);
     return { correct: isCorrect, got: isCorrect ? score : 0, full: score };
   }
   const kws = String(q.keywords || "")
@@ -38,7 +43,7 @@ export async function onRequestPost(context) {
     const ids = typeof paper_id === "string" ? JSON.parse(paper_id) : paper_id;
     const all = await cached("questions", 600, () => listTable(env, env.FEISHU_Q_TABLE));
     const map = new Map(all.map((q) => [q.id, q]));
-    let singleScore = 0,
+    let fillScore = 0,
       tfScore = 0,
       shortScore = 0,
       total = 0;
@@ -49,7 +54,7 @@ export async function onRequestPost(context) {
       const userAns = answers[id];
       const r = gradeOne(q, userAns);
       total += r.got;
-      if (q.q_type === "single") singleScore += r.got;
+      if (q.q_type === "fill") fillScore += r.got;
       else if (q.q_type === "tf") tfScore += r.got;
       else shortScore += r.got;
       if (!r.correct) {
@@ -69,7 +74,7 @@ export async function onRequestPost(context) {
         fields: {
           name: String(name).slice(0, 50),
           paper_id,
-          single_score: singleScore,
+          single_score: fillScore,
           tf_score: tfScore,
           short_score: shortScore,
           total_score: total,
@@ -79,7 +84,7 @@ export async function onRequestPost(context) {
       }
     );
     if (data.code !== 0) throw new Error("写入成绩失败: " + data.msg);
-    return json({ total, single_score: singleScore, tf_score: tfScore, short_score: shortScore, wrong });
+    return json({ total, fill_score: fillScore, tf_score: tfScore, short_score: shortScore, wrong });
   } catch (e) {
     return json({ error: String(e && e.message ? e.message : e) }, 500);
   }

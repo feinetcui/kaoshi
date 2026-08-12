@@ -23,16 +23,15 @@ export async function onRequestPost(context) {
   try {
     const env = await getEnv(context);
     const all = await cached("questions", 600, () => listTable(env, env.FEISHU_Q_TABLE));
-    const single = all.filter((q) => q.q_type === "single");
+    const fill = all.filter((q) => q.q_type === "fill");
     const tf = all.filter((q) => q.q_type === "tf");
     const short = all.filter((q) => q.q_type === "short");
-    const selected = [...sampleN(single, 20), ...sampleN(tf, 10), ...sampleN(short, 8)];
+    const selected = [...sampleN(fill, 20), ...sampleN(tf, 10), ...sampleN(short, 8)];
     const paperId = JSON.stringify(selected.map((q) => q.id));
     const questions = selected.map((q) => ({
       id: q.id,
       q_type: q.q_type,
       content: q.content,
-      options: q.q_type === "single" ? [q.opt_a, q.opt_b, q.opt_c, q.opt_d].filter(Boolean) : undefined,
     }));
     return json({ paper_id: paperId, questions });
   } catch (e) {

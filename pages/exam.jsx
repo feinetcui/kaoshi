@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
-const TYPE_LABEL = { single: "单选题", tf: "判断题", short: "简答题" };
-const LETTERS = ["A", "B", "C", "D"];
+const TYPE_LABEL = { fill: "填空题", tf: "判断题", short: "简答题" };
 
 export default function Exam() {
   const [exam, setExam] = useState(null);
@@ -59,7 +58,7 @@ export default function Exam() {
     }
   }
 
-  const groups = { single: [], tf: [], short: [] };
+  const groups = { fill: [], tf: [], short: [] };
   exam.questions.forEach((q) => groups[q.q_type].push(q));
 
   return (
@@ -73,7 +72,7 @@ export default function Exam() {
         </div>
         {err && <div className="err">{err}</div>}
 
-        {["single", "tf", "short"].map((type) =>
+        {["fill", "tf", "short"].map((type) =>
           groups[type].length ? (
             <section key={type}>
               <h3>
@@ -84,21 +83,13 @@ export default function Exam() {
                   <div className="q-title">
                     {i + 1}. {q.content}
                   </div>
-                  {type === "single" && (
-                    <div className="opts">
-                      {q.options.map((opt, oi) => (
-                        <label key={oi} className="opt">
-                          <input
-                            type="radio"
-                            name={q.id}
-                            value={LETTERS[oi]}
-                            checked={answers[q.id] === LETTERS[oi]}
-                            onChange={() => setAns(q.id, LETTERS[oi])}
-                          />
-                          {LETTERS[oi]}. {opt}
-                        </label>
-                      ))}
-                    </div>
+                  {type === "fill" && (
+                    <input
+                      className="input"
+                      placeholder="请输入答案"
+                      value={answers[q.id] || ""}
+                      onChange={(e) => setAns(q.id, e.target.value)}
+                    />
                   )}
                   {type === "tf" && (
                     <div className="opts">
