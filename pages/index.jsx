@@ -39,7 +39,7 @@ export default function Home() {
     <main className="container">
       <div className="card">
         <h1>企业文化考试</h1>
-        <p className="sub">请填写姓名后开始答题（随机抽题：填空20题、判断10题、简答8题）</p>
+        <p className="sub">请填写姓名后开始答题（随机抽题：填空20题、判断10题、简答5题）</p>
         <input
           className="input"
           placeholder="请输入你的姓名"

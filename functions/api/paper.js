@@ -26,7 +26,7 @@ export async function onRequestPost(context) {
     const fill = all.filter((q) => q.q_type === "fill");
     const tf = all.filter((q) => q.q_type === "tf");
     const short = all.filter((q) => q.q_type === "short");
-    const selected = [...sampleN(fill, 20), ...sampleN(tf, 10), ...sampleN(short, 8)];
+    const selected = [...sampleN(fill, 20), ...sampleN(tf, 10), ...sampleN(short, 5)];
     const paperId = JSON.stringify(selected.map((q) => q.id));
     const questions = selected.map((q) => ({
       id: q.id,
